@@ -10,15 +10,37 @@ use warnings;
 use utf8;
 use Mojo::UserAgent;
 
-# Check arguments
-if ($#ARGV+1 != 2){
-  print "usage: crawler <input-file> <output-file>";
-  exit;
+# Set text strings
+use constant USAGE_TEXT => "usage: crawler <input-file> <output-file>\n";
+
+# Create argument variables, defaulting to false
+my $debug = 0;
+my $keywords_filename = '';
+my $output_filename = '';
+
+# Process arguments
+for my $arg (@ARGV){
+    if ($arg =~ "^-"){
+        # Check for flags first
+        $arg =~ s/^-*//; # Remove all dashes from beginning of flag
+
+        # And process:
+        if ($arg eq "d" or $arg eq "debug") { $debug = 1; }
+    } else {
+        # Use non-flag args as variables for files in order:
+        if ($keywords_filename eq '') { $keywords_filename = $arg; }
+        elsif ($output_filename eq '') { $output_filename = $arg; }
+    }
 }
 
-# Set file names
-my $keywords_filename = $ARGV[0];
-my $output_filename = $ARGV[1];
+if ($debug) { print "Running in DEBUG mode...\n"; }
+
+if (!$output_filename){
+    print USAGE_TEXT;
+    exit;
+}
+
+# Set other files
 my $urls_filename = "websites.txt";
 my $positive_filename = "positive.txt";
 my $negative_filename = "negative.txt";
@@ -36,7 +58,7 @@ open(my $in_negative, "<", $negative_filename)
 # Create some lists for later processing
 my (@keywords, @positive_words, @negative_words, @urls);
 
-# Process keywords
+# Process and close input files
 push @keywords, $_ while(<$in_keywords>);
 chomp(@keywords);
 close $in_keywords;
@@ -49,6 +71,26 @@ close $in_positive;
 
 push @negative_words, $_ while(<$in_negative>);
 close $in_negative;
+
+# Print these lists in DEBUG:
+if ($debug) {
+    print "Keywords:\n";
+    for my $k (@keywords){print "\t$k\n"; }
+
+    print "\nURLS:\n";
+    for my $u (@urls){print "\t$u\n"; }
+
+    print "\nPositive words:\n";
+    for my $p (@positive_words){print "\t$p\n"; }
+
+    print "\nNegative words:\n";
+    for my $n (@negative_words){print "\t$n\n"; }
+    
+    print "\n";
+    exit;
+}
+
+
 
 # Begin constructing crawler
 my $conn_max = 4;   # Maximum connections
