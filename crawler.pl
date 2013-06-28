@@ -63,12 +63,15 @@ chomp(@keywords);
 close $in_keywords;
 
 push @urls, Mojo::URL->new($_) while (<$in_urls>);
+chomp(@urls);
 close $in_urls;
 
 push @positive_words, $_ while(<$in_positive>);
+chomp(@positive_words);
 close $in_positive;
 
 push @negative_words, $_ while(<$in_negative>);
+chomp(@negative_words);
 close $in_negative;
 
 # Print these lists in DEBUG:
@@ -87,6 +90,7 @@ if ($debug) {
     
     print "\n";
 }
+
 
 # Begin constructing crawler
 my $conn_max = 4;   # Maximum connections
@@ -121,14 +125,11 @@ sub get_callback {
     my (undef, $tx) = @_;  # Gather subroutine args
     --$active;  # Remove previously-created active connection
 
-    say $tx;
-
     # Make sure we've actually retrieved an HTML page
     return
         if not $tx->res->is_status_class(200)
         or $tx->res->headers->content_type !~ m{^text/html\b}ix;
 
-    say "test";
     # Request URL
     my $url = $tx->req->url;
 
