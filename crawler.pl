@@ -33,12 +33,11 @@ for my $arg (@ARGV){
     }
 }
 
-if ($debug) { print "Running in DEBUG mode...\n"; }
-
 if (!$output_filename){
     print USAGE_TEXT;
     exit;
 }
+print "Running in DEBUG mode...\n" if ($debug);
 
 # Set other files
 my $urls_filename = "websites.txt";
@@ -78,7 +77,7 @@ if ($debug) {
     print "\t$_\n" foreach (@keywords);
 
     print "\nURLS:\n";
-    print "\t$_\n" foreach (@urls);
+    print "\t$_" foreach (@urls);
 
     print "\nPositive words:\n";
     print "\t$_\n" foreach (@positive_words);
@@ -87,10 +86,7 @@ if ($debug) {
     print "\t$_\n" foreach (@negative_words);
     
     print "\n";
-    exit;
 }
-
-
 
 # Begin constructing crawler
 my $conn_max = 4;   # Maximum connections
@@ -125,11 +121,14 @@ sub get_callback {
     my (undef, $tx) = @_;  # Gather subroutine args
     --$active;  # Remove previously-created active connection
 
+    say $tx;
+
     # Make sure we've actually retrieved an HTML page
     return
         if not $tx->res->is_status_class(200)
         or $tx->res->headers->content_type !~ m{^text/html\b}ix;
 
+    say "test";
     # Request URL
     my $url = $tx->req->url;
 
