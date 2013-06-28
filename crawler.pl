@@ -75,16 +75,16 @@ close $in_negative;
 # Print these lists in DEBUG:
 if ($debug) {
     print "Keywords:\n";
-    for my $k (@keywords){print "\t$k\n"; }
+    print "\t$_\n" foreach (@keywords);
 
     print "\nURLS:\n";
-    for my $u (@urls){print "\t$u\n"; }
+    print "\t$_\n" foreach (@urls);
 
     print "\nPositive words:\n";
-    for my $p (@positive_words){print "\t$p\n"; }
+    print "\t$_\n" foreach (@positive_words);
 
     print "\nNegative words:\n";
-    for my $n (@negative_words){print "\t$n\n"; }
+    print "\t$_\n" foreach (@negative_words);
     
     print "\n";
     exit;
