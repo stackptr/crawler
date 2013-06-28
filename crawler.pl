@@ -14,7 +14,8 @@ use Mojo::UserAgent;
 use constant USAGE_TEXT => "usage: crawler <input-file> <output-file>\n";
 
 # Create argument variables, defaulting to false
-my $debug = 0;
+my $debug_mode = 0;
+my $verbose_mode = 0;
 my $keywords_filename = '';
 my $output_filename = '';
 
@@ -25,7 +26,8 @@ for my $arg (@ARGV){
         $arg =~ s/^-*//; # Remove all dashes from beginning of flag
 
         # And process:
-        if ($arg eq "d" or $arg eq "debug") { $debug = 1; }
+        $debug_mode = 1 if ($arg eq "d" or $arg eq "debug");
+        $verbose_mode = 1 if ($arg eq "v" or $arg eq "verbose");
     } else {
         # Use non-flag args as variables for files in order:
         if ($keywords_filename eq '') { $keywords_filename = $arg; }
@@ -37,7 +39,7 @@ if (!$output_filename){
     print USAGE_TEXT;
     exit;
 }
-print "Running in DEBUG mode...\n" if ($debug);
+print "Running in DEBUG mode...\n" if ($debug_mode);
 
 # Set other files
 my $urls_filename = "websites.txt";
@@ -75,12 +77,12 @@ chomp(@negative_words);
 close $in_negative;
 
 # Print these lists in DEBUG:
-if ($debug) {
+if ($debug_mode) {
     print "Keywords:\n";
     print "\t$_\n" foreach (@keywords);
 
     print "\nURLS:\n";
-    print "\t$_" foreach (@urls);
+    print "\t$_\n" foreach (@urls);
 
     print "\nPositive words:\n";
     print "\t$_\n" foreach (@positive_words);
@@ -133,7 +135,7 @@ sub get_callback {
     # Request URL
     my $url = $tx->req->url;
 
-    say "Searching $url";
+    say "Searching $url" if ($verbose_mode);
     parse_html($url, $tx);
 
     return;
@@ -187,12 +189,23 @@ sub parse_html {
 # TODO: Extract article from page (domain-specific?)
 sub search_document {
   my ($url, $tx) = @_;
-  my $document_text = $tx->res->dom->all_text;
 
-  for my $term (@keywords) {
-    if ($document_text =~ m/$term/){
-      print "Found $term in $url \n";
-    }
+  my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
+  foreach my $text (@paragraphs){
+      foreach my $term (@keywords){
+          if($text =~ m/$term/){
+              print "Found $term in $url\n" if ($verbose_mode);
+              foreach (@positive_words) {
+                  if ($text =~ m/$_/){
+                      print "$term: Found positive word ($_)\n" if ($verbose_mode);
+                  }
+              }
+              foreach (@negative_words) {
+                  if ($text =~ m/$_/){
+                      print "$term: Found negative word ($_)\n" if ($verbose_mode);
+                  }
+              }
+          }
+      }
   }
-
 }

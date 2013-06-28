@@ -13,5 +13,8 @@ my $tx = $ua->get($url);
 say $tx->res->dom->at('html title')->text;
 
 my @text = $tx->res->dom->find('p')->pluck('text')->each;
-print $_ foreach (@text);
+
+foreach (@text){
+    if ($_ =~ m/General/){ print "Found one!\n"; }
+}
 
