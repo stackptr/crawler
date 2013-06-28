@@ -148,9 +148,6 @@ sub parse_html {
     # At this point:
     # $url = Mojo::URL object
     # $tx = Mojo::Transaction object
-
-    # Output title of URL
-    #say $tx->res->dom->at('html title')->text;
     
     # Search document
     search_document($url, $tx);
@@ -186,26 +183,28 @@ sub parse_html {
 }
 
 # Search document subroutine
-# TODO: Extract article from page (domain-specific?)
 sub search_document {
-  my ($url, $tx) = @_;
-
-  my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
-  foreach my $text (@paragraphs){
-      foreach my $term (@keywords){
-          if($text =~ m/$term/){
-              print "Found $term in $url\n" if ($verbose_mode);
-              foreach (@positive_words) {
-                  if ($text =~ m/$_/){
-                      print "$term: Found positive word ($_)\n" if ($verbose_mode);
-                  }
-              }
-              foreach (@negative_words) {
-                  if ($text =~ m/$_/){
-                      print "$term: Found negative word ($_)\n" if ($verbose_mode);
-                  }
-              }
-          }
-      }
-  }
+    my ($url, $tx) = @_;
+    my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
+    
+    foreach my $term (@keywords){
+        my $found = 0;
+        foreach my $text (@paragraphs){
+            if ($text =~ m/$term/){ $found = 1; }
+            
+            if ($found) {
+                foreach (@positive_words) {
+                    if ($text =~ m/$_/){
+                        print "$term: Found positive word ($_)\n";
+                    }
+                }
+                foreach (@negative_words) {
+                    if ($text =~ m/$_/){
+                        print "$term: Found negative word ($_)\n";
+                    }
+                }
+            }
+        }
+    }
 }
+

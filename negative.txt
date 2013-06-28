@@ -1,3 +1,4 @@
 failure
 penalty
 bankrupt
+debt
