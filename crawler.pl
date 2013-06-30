@@ -11,7 +11,7 @@ use utf8;
 use Mojo::UserAgent;
 
 # Set text strings
-use constant USAGE_TEXT => "usage: crawler <input-file> <output-file>\n";
+use constant USAGE_TEXT => "usage: crawler <input-file> <output-file>";
 
 # Create argument variables, defaulting to false
 my $debug_mode = 0;
@@ -36,10 +36,10 @@ for my $arg (@ARGV){
 }
 
 if (!$output_filename){
-    print USAGE_TEXT;
+    say USAGE_TEXT;
     exit;
 }
-print "Running in DEBUG mode...\n" if ($debug_mode);
+say "Running in DEBUG mode..." if ($debug_mode);
 
 # Set other files
 my $urls_filename = "websites.txt";
@@ -57,11 +57,13 @@ open(my $in_negative, "<", $negative_filename)
   or die "Could not open $negative_filename to read negative wordlist!\n";
 
 # Create some lists for later processing
-my (@keywords, @positive_words, @negative_words, @urls);
+my (%keywords, @positive_words, @negative_words, @urls);
 
 # Process and close input files
-push @keywords, $_ while(<$in_keywords>);
-chomp(@keywords);
+my @keyword_list;
+push @keyword_list, $_ while (<$in_keywords>);
+chomp @keyword_list;
+$keywords{$_} = 0 foreach (@keyword_list);
 close $in_keywords;
 
 push @urls, Mojo::URL->new($_) while (<$in_urls>);
@@ -78,19 +80,17 @@ close $in_negative;
 
 # Print these lists in DEBUG:
 if ($debug_mode) {
-    print "Keywords:\n";
-    print "\t$_\n" foreach (@keywords);
+    say "Keywords:";
+    say "\t$_" foreach (keys %keywords);
 
-    print "\nURLS:\n";
-    print "\t$_\n" foreach (@urls);
+    say "\nURLS:";
+    say "\t$_" foreach (@urls);
 
-    print "\nPositive words:\n";
-    print "\t$_\n" foreach (@positive_words);
+    say "\nPositive words:";
+    say "\t$_" foreach (@positive_words);
 
-    print "\nNegative words:\n";
-    print "\t$_\n" foreach (@negative_words);
-    
-    print "\n";
+    say "\nNegative words:";
+    say "\t$_" foreach (@negative_words);
 }
 
 
@@ -187,7 +187,7 @@ sub search_document {
     my ($url, $tx) = @_;
     my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
     
-    foreach my $term (@keywords){
+    foreach my $term (keys %keywords){
         my $found = 0;
         foreach my $text (@paragraphs){
             if ($text =~ m/$term/){ $found = 1; }
@@ -195,16 +195,19 @@ sub search_document {
             if ($found) {
                 foreach (@positive_words) {
                     if ($text =~ m/$_/){
-                        print "$term: Found positive word ($_)\n";
+                        say "$term: Found positive word ($_)";
+                        $keywords{$term} += 1;
                     }
                 }
                 foreach (@negative_words) {
                     if ($text =~ m/$_/){
-                        print "$term: Found negative word ($_)\n";
+                        say "$term: Found negative word ($_)";
+                        $keywords{$term} -= 1;
                     }
                 }
             }
         }
+        say "Weight for $term in $url: $keywords{$term}" if ($found);
     }
 }
 
