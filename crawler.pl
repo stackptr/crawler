@@ -230,7 +230,7 @@ sub exit_handler {
 
     # Print results of crawl
     say "Crawling results:";
-    say "$_: $keywords{$_}" foreach (keys $keywords);
+    say "$_: $keywords{$_}" foreach (keys %keywords);
 
 
     exit;
