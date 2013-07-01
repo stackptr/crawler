@@ -13,6 +13,10 @@ use Mojo::UserAgent;
 # Set text strings
 use constant USAGE_TEXT => "usage: crawler <input-file> <output-file>";
 
+# Set signal handlers
+$SIG{'INT'} = \&exit_handler;
+$SIG{'QUIT'} = \&exit_handler;
+
 # Create argument variables, defaulting to false
 my $debug_mode = 0;
 my $verbose_mode = 0;
@@ -188,11 +192,9 @@ sub search_document {
     my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
     
     foreach my $term (keys %keywords){
-        my $found = 0;
         foreach my $text (@paragraphs){
-            if ($text =~ m/$term/){ $found = 1; }
-            
-            if ($found) {
+            # If keyword found in paragraph, search paragraph for pos/neg words
+            if ($text =~ m/$term/) {
                 foreach (@positive_words) {
                     if ($text =~ m/$_/){
                         say "$term: Found positive word ($_)";
@@ -207,7 +209,19 @@ sub search_document {
                 }
             }
         }
-        say "Weight for $term in $url: $keywords{$term}" if ($found);
+        say "Weight for $term in $url: $keywords{$term}" if ($keywords{$term} != 0);
     }
+}
+
+sub exit_handler {
+    my ($sig) = @_;
+    say "Exiting on SIG$sig -- Stopping event loop";
+    Mojo::IOLoop->stop;
+
+    # Close output file(s)
+
+    # Print results of crawl
+
+    exit;
 }
 

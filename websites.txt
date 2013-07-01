@@ -1,3 +1,7 @@
 http://www.businessinsider.com
 http://www.businessweek.com
 http://www.bloomberg.com
+http://money.cnn.com/news
+http://www.forbes.com
+http://www.reuters.com/finance
+http://www.wsj.com
