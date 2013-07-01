@@ -192,24 +192,32 @@ sub search_document {
     my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
     
     foreach my $term (keys %keywords){
+        my $found;
+        my $weight = 0;
         foreach my $text (@paragraphs){
             # If keyword found in paragraph, search paragraph for pos/neg words
             if ($text =~ m/$term/) {
+                $found = 1;
                 foreach (@positive_words) {
                     if ($text =~ m/$_/){
                         say "$term: Found positive word ($_)";
-                        $keywords{$term} += 1;
+                        $weight++;
                     }
                 }
                 foreach (@negative_words) {
                     if ($text =~ m/$_/){
                         say "$term: Found negative word ($_)";
-                        $keywords{$term} -= 1;
+                        $weight--;
                     }
                 }
             }
         }
-        say "Weight for $term in $url: $keywords{$term}" if ($keywords{$term} != 0);
+
+        # Only output weight if there was a pos/neg word found
+        say "Weight for $term: $weight ($url)" if ($found);
+
+        # Update weight across all pages
+        $keywords{$term} += $weight;
     }
 }
 
@@ -221,6 +229,9 @@ sub exit_handler {
     # Close output file(s)
 
     # Print results of crawl
+    say "Crawling results:";
+    say "$_: $keywords{$_}" foreach (keys $keywords);
+
 
     exit;
 }
