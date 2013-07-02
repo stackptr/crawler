@@ -9,6 +9,7 @@ use strict;
 use warnings;
 use utf8;
 use Mojo::UserAgent;
+use IO::Tee;
 
 # Set text strings
 use constant USAGE_TEXT => "usage: crawler <input-file> <output-file>";
@@ -49,6 +50,7 @@ say "Running in DEBUG mode..." if ($debug_mode);
 my $urls_filename = "websites.txt";
 my $positive_filename = "positive.txt";
 my $negative_filename = "negative.txt";
+my $log_filename = "crawler.log";
 
 # Open files
 open(my $in_keywords, "<", $keywords_filename)
@@ -59,6 +61,18 @@ open(my $in_positive, "<", $positive_filename)
   or die "Could not open $positive_filename to read positive wordlist!\n";
 open(my $in_negative, "<", $negative_filename)
   or die "Could not open $negative_filename to read negative wordlist!\n";
+open(my $output, ">>", $output_filename)
+  or die "Could not open $output_filename for output!\n";
+open(my $log, ">>", $log_filename)
+  or die "Could not open $log_filename for logging!\n";
+
+# In verbose mode, print messages to screen and log
+my $out;
+if ($verbose_mode){
+    $out = IO::Tee->new(STDOUT, $log)
+} else {
+    $out = IO::Tee->new
+
 
 # Create some lists for later processing
 my (%keywords, @positive_words, @negative_words, @urls);
