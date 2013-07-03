@@ -245,20 +245,32 @@ sub search_document {
             }
         }
 
-        # If a word was found, output the weight and update the global page count
-        if ($found){
-            # Update total page count
-            ${$keywords{$term}}[2]++;
-            
+        # Update total page count if the keyword was found
+        ${$keywords{$term}}[2]++ if ($found);
+
+        # Only print message on non-neutral page
+        if ($found and $weight != 0){
+            print color 'bold white';
+            print $out "$term";
+            print color 'reset';
+            print $out ": ";
             if ($weight > 0) {
-                say $out "$term: POSITIVE (+$weight) - $url";
+                print color 'green';
+                print $out "POSITIVE";
+                print color 'reset';
+                print $out " (+$weight) - ";
                 ${$keywords{$term}}[0]++;
             } elsif ($weight < 0) {
-                say $out "$term: NEGATIVE ($weight) - $url";
+                print color 'red';
+                print $out "NEGATIVE";
+                print color 'reset';
+                print $out " ($weight) - ";
                 ${$keywords{$term}}[0]++;
-            } else {
-                #say $out "$term: NEUTRAL ($weight) - $url";
             }
+            print color 'underline blue';
+            print $out "$url\n";
+            print color 'reset';
+
         }
     }
 }
