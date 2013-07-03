@@ -248,15 +248,16 @@ sub search_document {
         say $out "Weight for $term: $weight ($url)" if ($found);
 
         # Update total page count if the word was found, and pos or neg count
-        ${$keywords{$term}}[0]++ if ($found);
+        ${$keywords{$term}}[2]++ if ($found);
         if ($weight > 0) {
-            ${$keywords{$term}}[1]++;
+            ${$keywords{$term}}[0]++;
         } elsif ($weight < 0) {
-            ${$keywords{$term}}[2]++
+            ${$keywords{$term}}[1]++
         }
     }
 }
 
+# Called before exiting to clean things up
 sub exit_handler {
     my ($sig) = @_;
     say "\nExiting on SIG$sig -- Stopping event loop";
@@ -277,14 +278,11 @@ sub exit_handler {
     printf $summary "%-10s%14d%14d%14d\n",$_,@{$keywords{$_}} foreach(keys %keywords);
     say $summary "Time taken: $time_total seconds";
 
-    # Close output file(s)
-    close $summary;
-    close $out;
-    close $log;
-
+    #sleep 1;
     exit;
 }
 
+# Simple function to make raw time output a bit more readable
 sub format_seconds {
     my ($seconds, $minutes, $hours, $days);
     (my $time) = @_;
