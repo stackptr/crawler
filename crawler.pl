@@ -8,6 +8,7 @@ use 5.010;
 use strict;
 use warnings;
 use utf8;
+use Term::ANSIColor;
 use Mojo::UserAgent;
 use IO::Tee;
 
@@ -47,7 +48,7 @@ if (!$output_filename){
 
 # Process mode
 $debug_mode = 0 if ($quiet_mode);
-say "Running in DEBUG mode..." if ($debug_mode);
+say colored("Running in DEBUG mode...", 'underline yellow') if ($debug_mode);
 
 # Set other files
 my $urls_filename = "websites.txt";
@@ -89,8 +90,8 @@ if ($quiet_mode){
 # Write timestamps to output and log files:
 my $time_start = time;
 my $timestamp = localtime;
-say $log_file "*** BEGIN LOGGING AT $timestamp\n";
-say $out_file "*** BEGIN OUTPUT AT $timestamp\n";
+say $log_file "\n\n*** BEGIN LOGGING AT $timestamp\n";
+say $out_file "\n\n*** BEGIN OUTPUT AT $timestamp\n";
 
 # Create some lists for later processing
 my (%keywords, @positive_words, @negative_words, @urls);
@@ -244,15 +245,20 @@ sub search_document {
             }
         }
 
-        # Only output weight if there was a pos/neg word found
-        say $out "Weight for $term: $weight ($url)" if ($found);
-
-        # Update total page count if the word was found, and pos or neg count
-        ${$keywords{$term}}[2]++ if ($found);
-        if ($weight > 0) {
-            ${$keywords{$term}}[0]++;
-        } elsif ($weight < 0) {
-            ${$keywords{$term}}[1]++
+        # If a word was found, output the weight and update the global page count
+        if ($found){
+            # Update total page count
+            ${$keywords{$term}}[2]++;
+            
+            if ($weight > 0) {
+                say $out "$term: POSITIVE (+$weight) - $url";
+                ${$keywords{$term}}[0]++;
+            } elsif ($weight < 0) {
+                say $out "$term: NEGATIVE ($weight) - $url";
+                ${$keywords{$term}}[0]++;
+            } else {
+                #say $out "$term: NEUTRAL ($weight) - $url";
+            }
         }
     }
 }
@@ -268,9 +274,9 @@ sub exit_handler {
     my $time_total = $time_end - $time_start;
 
     # Write summary: ensure that it is always written to file and stdout
-    my $summary = IO::Tee->new(\*STDOUT, IO::File->new(">>$output_filename"));
+    my $summary = IO::Tee->new(\*STDOUT, $output_filename);
 
-    say $summary "*** ENDED CRAWL AT $timestamp";
+    say $summary colored("*** ENDED CRAWL AT $timestamp", 'yellow');
     say $summary "Summary of crawl:\n";
     printf $summary "%-10s%14s%14s%14s\n","Keyword","Positive","Negative","Total";
     print "-" foreach (1..52);
