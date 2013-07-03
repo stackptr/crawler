@@ -274,9 +274,11 @@ sub exit_handler {
     my $time_total = $time_end - $time_start;
 
     # Write summary: ensure that it is always written to file and stdout
-    my $summary = IO::Tee->new(\*STDOUT, $output_filename);
+    my $summary = IO::Tee->new(\*STDOUT, $out_file);
 
-    say $summary colored("*** ENDED CRAWL AT $timestamp", 'yellow');
+    print color 'yellow';
+    say $summary "\n\n*** ENDED CRAWL AT $timestamp";
+    print color 'reset';
     say $summary "Summary of crawl:\n";
     printf $summary "%-10s%14s%14s%14s\n","Keyword","Positive","Negative","Total";
     print "-" foreach (1..52);
