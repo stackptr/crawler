@@ -259,7 +259,7 @@ sub search_document {
 
 sub exit_handler {
     my ($sig) = @_;
-    say "Exiting on SIG$sig -- Stopping event loop";
+    say "\nExiting on SIG$sig -- Stopping event loop";
     Mojo::IOLoop->stop;
 
     $timestamp = localtime;
@@ -270,8 +270,11 @@ sub exit_handler {
     my $summary = IO::Tee->new(\*STDOUT, IO::File->new(">>$output_filename"));
 
     say $summary "*** ENDED CRAWL AT $timestamp";
-    say $summary "Summary of crawl:";
-    say $summary "$_: +${$keywords{$_}}[1] -${$keywords{$_}}[2], Total: ${$keywords{$_}}[0]" foreach (keys %keywords);
+    say $summary "Summary of crawl:\n";
+    printf $summary "%-10s%14s%14s%14s\n","Keyword","Positive","Negative","Total";
+    print "-" foreach (1..52);
+    print "\n";
+    printf $summary "%-10s%14d%14d%14d\n",$_,@{$keywords{$_}} foreach(keys %keywords);
     say $summary "Time taken: $time_total seconds";
 
     # Close output file(s)
@@ -280,5 +283,22 @@ sub exit_handler {
     close $log;
 
     exit;
+}
+
+sub format_seconds {
+    my ($seconds, $minutes, $hours, $days);
+    (my $time) = @_;
+    
+    return "$time seconds" if ($time < 60);
+    if ($time < 60*60){
+        $minutes = int($time/60);
+        return "$minutes minutes ($time seconds)";
+    } elsif ($time < 3600*24) {
+        $hours = int($time/3600);
+        return "$hours hours ($time seconds)";
+    } else {
+        $days = int($time/(60*60*24));
+        return "$days days ($time seconds)";
+    }
 }
 
