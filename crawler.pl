@@ -99,7 +99,7 @@ my (%keywords, @positive_words, @negative_words, @urls);
 my @keyword_list;
 push @keyword_list, $_ while (<$in_keywords>);
 chomp @keyword_list;
-$keywords{$_} = 0 foreach (@keyword_list);
+@{$keywords{$_}} = (0, 0, 0) foreach (@keyword_list); # +page, -page total_pages
 close $in_keywords;
 
 push @urls, Mojo::URL->new($_) while (<$in_urls>);
@@ -171,7 +171,7 @@ sub get_callback {
     # Request URL
     my $url = $tx->req->url;
 
-    #say "Searching $url" if ($verbose_mode);
+    say $log "Searching $url";
     parse_html($url, $tx);
 
     return;
@@ -211,9 +211,7 @@ sub parse_html {
         next if $link->host ne $url->host;
 
         push @urls, $link;
-        #say " -> $link";
     }
-    #say '';
 
     return;
 }
@@ -248,8 +246,13 @@ sub search_document {
         # Only output weight if there was a pos/neg word found
         say $out "Weight for $term: $weight ($url)" if ($found);
 
-        # Update weight across all pages
-        $keywords{$term} += $weight;
+        # Update total page count if the word was found, and pos or neg count
+        ${$keywords{$term}}[0]++ if ($found);
+        if ($weight > 0) {
+            ${$keywords{$term}}[1]++;
+        } elsif ($weight < 0) {
+            ${$keywords{$term}}[2]++
+        }
     }
 }
 
@@ -265,11 +268,15 @@ sub exit_handler {
     # Write summary: ensure that it is always written to file and stdout
     my $summary = IO::Tee->new(\*STDOUT, IO::File->new(">>$output_filename"));
 
-    say $summary "*******************";
+    say $summary "*** ENDED CRAWL AT $timestamp";
     say $summary "Summary of crawl:";
-    say $summary "$_: $keywords{$_}" foreach (keys %keywords);
+    say $summary "$_: +${$keywords{$_}}[1] -${$keywords{$_}}[2], Total: ${$keywords{$_}}[0]" foreach (keys %keywords);
+    say $summary "Time taken: $time_total seconds";
 
     # Close output file(s)
+    close $summary;
+    close $out;
+    close $log;
 
     exit;
 }
