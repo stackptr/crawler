@@ -171,7 +171,8 @@ sub get_callback {
     # Request URL
     my $url = $tx->req->url;
 
-    say $log "Searching $url";
+    # Verbose mode?
+    #say $log "Searching $url";
     parse_html($url, $tx);
 
     return;
