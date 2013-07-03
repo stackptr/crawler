@@ -222,6 +222,8 @@ sub parse_html {
 sub search_document {
     my ($url, $tx) = @_;
     my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
+
+    say $log "Searching: $url";
     
     foreach my $term (keys %keywords){
         my $found;
@@ -284,6 +286,7 @@ sub exit_handler {
     $timestamp = localtime;
     my $time_end = time;
     my $time_total = $time_end - $time_start;
+    $time_total = format_seconds($time_total);
 
     # Write summary: ensure that it is always written to file and stdout
     my $summary = IO::Tee->new(\*STDOUT, $out_file);
@@ -296,9 +299,8 @@ sub exit_handler {
     print "-" foreach (1..52);
     print "\n";
     printf $summary "%-10s%14d%14d%14d\n",$_,@{$keywords{$_}} foreach(keys %keywords);
-    say $summary "Time taken: $time_total seconds";
+    say $summary "Time taken: $time_total";
 
-    #sleep 1;
     exit;
 }
 
