@@ -1,0 +1,66 @@
+Crawler specification
+
+Requirements:
+
+1. Perl 5.010 or higher must be installed
+2. Ensure the necessary files are found in the crawler directory:
+    a. websites.txt - Defines a list of URLs to start crawling from. Do not use a forward slash (/) at the end of a URL
+    b. positive.txt - Defines a list of positive words
+    c. negative.txt - Defines a list of negative words
+    d. input.txt - Defines the keywords that the crawler will search for.
+3. Run the program through the follow command: perl crawler.pl input.txt output.txt -- Where output.txt is the file where the crawler will log statistics of the crawl to. A file crawler.log is also created the logs internal messages.
+
+
+Modes:
+
+Quiet mode (-q or --quiet) : Suppress all output to screen, except crawling summary (this mode takes priority over other modes)
+Debug mode (-d or --debug) : Print internal logging messages to screen
+Default mode (no mode specified): Print statistical messages that are printed to output file when keyword is found
+
+The following output is obtained through the program:
+ - Keywords that are obtained from the input files (log file, debug mode)
+ - URL that the crawler is accessing (log file, debug mode)
+ - Which keyword was found in a URL (log file)
+ - Which word was found (log file)
+ - The weight of the page for the keyword
+
+
+Output file format:
+  - Output produced by the program is appended to the file specified. If the file already exists, the information in the file is preserved and the output is written to the end of the file.
+  - When the crawler is run, a timestamp is first printed to the output file.
+  - For each keyword found in a page, the following information is printed:
+    KEYWORD: POSITIVE|NEUTRAL|NEGATIVE (WEIGHT) - URL
+
+    e.g.: Facebook: POSITIVE (+6) - http://example.com/facebook-article
+  
+  - When crawling is stopped, a summary is printed in the following format (this is also printed to the screen):
+    
+    Summary: Positive, Negative, Neutral, Total
+    KEYWORD: +PAGES -PAGES PAGES => TOTAL_PAGES
+
+    e.g.: Facebook: +6   -3   4 => 13
+
+
+
+
+
+Functions:
+
+
+1. Crawl a list of URLs to find articles relevant to given keywords.
+
+This is accomplished by first providing a list of root URLs for the program to crawl. The program first downloads the page into memory asynchronously: it will open numerous pages simultaenously and perform analysis of those pages, and when one analysis is finished the next analysis can start before the rest of the pages are finished. This increases performance since network speed is typically very slow compared to processor throughput.
+
+Once a page is in memory, the program will make an assumption that all article text exists within the paragraph and headline HTML tags, which is for the most part a valid assumption since these tags exist for document text which other tags exist for page features such as navigation or advertising. Precision may be gained at the expense of needing to know the specific page structure for an article. Since most news websites reuse the same page structure for all their articles, this would only need to be configured on a per-domain basis, but would make the program more inflexible.
+
+The article text is then analyzed for specific keywords defined in the input file specified on program start. This is a simple string match. If the keyword is found, the page text is then analyzed to determine sentiment.
+
+Todo:
+Keyword aliasing: Ability to define different variations of a keyword, for example the stock symbol. All output/statistics would be grouped under the first keyword. E.g., input file reads "Facebook FB Zuckerberg", but any pages with the keyword Zuckerberg are filed under "Facebook" keyword.
+URL mask: If all news articles are known to exist in a domain under the /news/ directory, then a mask provided (e.g., "/news/*") will be used by the crawler before performing any keyword search. Could also be used to exclude certain directories or pages).
+
+2. Sentiment analysis
+
+The article is assumed to be opinionated and to be focused on the topic we're interested in, to simplify analysis.
+
+Convert a piece of text into a feature vector (look into feature selection for machine learning approaches).

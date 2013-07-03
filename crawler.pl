@@ -12,7 +12,7 @@ use Mojo::UserAgent;
 use IO::Tee;
 
 # Set text strings
-use constant USAGE_TEXT => "usage: crawler <input-file> <output-file>";
+use constant USAGE_TEXT => "usage: crawler <input-file> <output-file> [-d|--debug] [-q|--quiet]";
 
 # Set signal handlers
 $SIG{'INT'} = \&exit_handler;
@@ -20,7 +20,7 @@ $SIG{'QUIT'} = \&exit_handler;
 
 # Create argument variables, defaulting to false
 my $debug_mode = 0;
-my $verbose_mode = 0;
+my $quiet_mode = 0;
 my $keywords_filename = '';
 my $output_filename = '';
 
@@ -32,7 +32,7 @@ for my $arg (@ARGV){
 
         # And process:
         $debug_mode = 1 if ($arg eq "d" or $arg eq "debug");
-        $verbose_mode = 1 if ($arg eq "v" or $arg eq "verbose");
+        $quiet_mode = 1 if ($arg eq "q" or $arg eq "quiet");
     } else {
         # Use non-flag args as variables for files in order:
         if ($keywords_filename eq '') { $keywords_filename = $arg; }
@@ -44,6 +44,9 @@ if (!$output_filename){
     say USAGE_TEXT;
     exit;
 }
+
+# Process mode
+$debug_mode = 0 if ($quiet_mode);
 say "Running in DEBUG mode..." if ($debug_mode);
 
 # Set other files
@@ -61,18 +64,33 @@ open(my $in_positive, "<", $positive_filename)
   or die "Could not open $positive_filename to read positive wordlist!\n";
 open(my $in_negative, "<", $negative_filename)
   or die "Could not open $negative_filename to read negative wordlist!\n";
-open(my $output, ">>", $output_filename)
+
+# Open output files, multiplex based on mode
+open(my $out_file, ">>", $output_filename)
   or die "Could not open $output_filename for output!\n";
-open(my $log, ">>", $log_filename)
+open(my $log_file, ">>", $log_filename)
   or die "Could not open $log_filename for logging!\n";
 
-# In verbose mode, print messages to screen and log
-my $out;
-if ($verbose_mode){
-    $out = IO::Tee->new(STDOUT, $log)
+my ($out, $log);
+if ($quiet_mode){
+    # Quiet mode: write stats and log to file
+    $out = $out_file;
+    $log = $log_file;
+} elsif ($debug_mode) {
+    # Debug mode: print stats, print log
+    $out = IO::Tee->new(\*STDOUT, $out_file);
+    $log = IO::Tee->new(\*STDOUT, $log_file);
 } else {
-    $out = IO::Tee->new
+    # Default mode: print stats, write log to file
+    $out = IO::Tee->new(\*STDOUT, $out_file);
+    $log = $log_file;
+}
 
+# Write timestamps to output and log files:
+my $time_start = time;
+my $timestamp = localtime;
+say $log_file "*** BEGIN LOGGING AT $timestamp\n";
+say $out_file "*** BEGIN OUTPUT AT $timestamp\n";
 
 # Create some lists for later processing
 my (%keywords, @positive_words, @negative_words, @urls);
@@ -98,17 +116,17 @@ close $in_negative;
 
 # Print these lists in DEBUG:
 if ($debug_mode) {
-    say "Keywords:";
-    say "\t$_" foreach (keys %keywords);
+    say $log "Keywords:";
+    say $log "\t$_" foreach (keys %keywords);
 
-    say "\nURLS:";
-    say "\t$_" foreach (@urls);
+    say $log "\nURLS:";
+    say $log "\t$_" foreach (@urls);
 
-    say "\nPositive words:";
-    say "\t$_" foreach (@positive_words);
+    say $log "\nPositive words:";
+    say $log "\t$_" foreach (@positive_words);
 
-    say "\nNegative words:";
-    say "\t$_" foreach (@negative_words);
+    say $log "\nNegative words:";
+    say $log "\t$_" foreach (@negative_words);
 }
 
 
@@ -153,7 +171,7 @@ sub get_callback {
     # Request URL
     my $url = $tx->req->url;
 
-    say "Searching $url" if ($verbose_mode);
+    #say "Searching $url" if ($verbose_mode);
     parse_html($url, $tx);
 
     return;
@@ -214,13 +232,13 @@ sub search_document {
                 $found = 1;
                 foreach (@positive_words) {
                     if ($text =~ m/$_/){
-                        say "$term: Found positive word ($_)";
+                        say $log "$term: Found positive word ($_)";
                         $weight++;
                     }
                 }
                 foreach (@negative_words) {
                     if ($text =~ m/$_/){
-                        say "$term: Found negative word ($_)";
+                        say $log "$term: Found negative word ($_)";
                         $weight--;
                     }
                 }
@@ -228,7 +246,7 @@ sub search_document {
         }
 
         # Only output weight if there was a pos/neg word found
-        say "Weight for $term: $weight ($url)" if ($found);
+        say $out "Weight for $term: $weight ($url)" if ($found);
 
         # Update weight across all pages
         $keywords{$term} += $weight;
@@ -240,12 +258,18 @@ sub exit_handler {
     say "Exiting on SIG$sig -- Stopping event loop";
     Mojo::IOLoop->stop;
 
+    $timestamp = localtime;
+    my $time_end = time;
+    my $time_total = $time_end - $time_start;
+
+    # Write summary: ensure that it is always written to file and stdout
+    my $summary = IO::Tee->new(\*STDOUT, IO::File->new(">>$output_filename"));
+
+    say $summary "*******************";
+    say $summary "Summary of crawl:";
+    say $summary "$_: $keywords{$_}" foreach (keys %keywords);
+
     # Close output file(s)
-
-    # Print results of crawl
-    say "Crawling results:";
-    say "$_: $keywords{$_}" foreach (keys %keywords);
-
 
     exit;
 }
