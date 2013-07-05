@@ -10,7 +10,7 @@ use Algorithm::NaiveBayes;
 my $nb = Algorithm::NaiveBayes->new;
 
 # Create list of words to ignore:
-my @ignore = ("the", "a", "is", "I");
+my @ignore = ('', ' ', "the", "a", "is", "I");
 
 # For each file in each directory, retrieve a hash with each key being a
 # unique word, and each value the associated frequency of that word.
@@ -65,12 +65,14 @@ sub hash_file {
 
 	foreach (@word_list){
 		$_ =~ s/[[:punct:]]//g; # Remove punctuation
-		next if ($_ eq '');
 
+    # Remove common words
     foreach my $w (@ignore){
         next if ($_ eq $w);
     }
 
+    # Lowercase
+    $_ = lc;
 
 		# Increment frequency if word is in hash, or add to hash
 		if (exists $words{$_} ){
