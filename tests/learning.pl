@@ -14,33 +14,34 @@ my $nb = Algorithm::NaiveBayes->new;
 # unique word, and each value the associated frequency of that word.
 
 # Start with scanning good reviews directory
+say "*** Processing good reviews";
 my @files = <set/good/*>;
 foreach (@files) {
 	next if ($_ =~ m/^\./); # ignore files beginning with .
 	say "Reading $_";
 	my %attr = hash_file($_);
 	$nb->add_instance ( attributes => \%attr, label => 'good');
-	say "Completed processing";
 }
 
 # Then scan bad reviews
+say "*** Processing bad reviews";
 @files = <set/bad/*>;
 foreach (@files) {
 	next if ($_ =~ m/^\./); # ignore files beginning with .
 	say "Reading $_";
 	my %attr = hash_file($_);
 	$nb->add_instance ( attributes => \%attr, label => 'bad');
-	say "Completed processing";
 }
 
 # Train, and cross fingers
 $nb->train;
 
 # Test unknown reviews
+say "*** Predicting unknown reviews";
 @files = <set/unknown/*>;
 foreach (@files) {
 	next if ($_ =~ m/^\./); # ignore files beginning with .
-	say "Testing $_";
+	print "$_: ";
 	my %attr = hash_file($_);
 	my $result = $nb->predict(attributes => \%attr);
 	print Dumper($result);
