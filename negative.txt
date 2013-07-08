@@ -1,58 +1,58 @@
-failure
-penalty
-bankrupt
-debt
-adverse
-repugnant
-weak
-unenthusiastic
-unfavorable
-detrimental
-cynical
-gloomy
-bomb
-botch
-bungle
-bust
-fiasco
-flop
-inadequate
-inadequacy
-loser
-losing
-loss
-mess
-miscarriage
-misstep
-rout
-rupture
-washout
-wreck
-decline
-decay
-lapse
-recession
-slump
-wane
-dive
-downfall
-comedown
-relapse
-dwindling
-downturn
-worsening
-abatement
-lessening
-forfeit
-waste
-damages
-fine
-penalty
-relinquishment
-broke
-deplete
-destitute
-exhaust
-insolvent
-ruin
-impoverished
+failure 1
+penalty 1
+bankrupt 1
+debt 1
+adverse 1
+repugnant 1
+weak 1
+unenthusiastic 1
+unfavorable 1
+detrimental 1
+cynical 1
+gloomy 1
+bomb 1
+botch 1
+bungle 1
+bust 1
+fiasco 1
+flop 1
+inadequate 1
+inadequacy 1
+loser 1
+losing 1
+loss 1
+mess 1
+miscarriage 1
+misstep 1
+rout 1
+rupture 1
+washout 1
+wreck 1
+decline 1
+decay 1
+lapse 1
+recession 1
+slump 1
+wane 1
+dive 1
+downfall 1
+comedown 1
+relapse 1
+dwindling 1
+downturn 1
+worsening 1
+abatement 1
+lessening 1
+forfeit 1
+waste 1
+damages 1
+fine 1
+penalty 1
+relinquishment 1
+broke 1
+deplete 1
+destitute 1
+exhaust 1
+insolvent 1
+ruin 1
+impoverished 1

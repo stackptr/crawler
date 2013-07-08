@@ -94,7 +94,7 @@ say $log_file "\n\n*** BEGIN LOGGING AT $timestamp\n";
 say $out_file "\n\n*** BEGIN OUTPUT AT $timestamp\n";
 
 # Create some lists for later processing
-my (%keywords, @positive_words, @negative_words, @urls);
+my (%keywords, %positive_words, %negative_words, @urls);
 
 # Process and close input files
 my @keyword_list;
@@ -107,12 +107,18 @@ push @urls, Mojo::URL->new($_) while (<$in_urls>);
 chomp(@urls);
 close $in_urls;
 
-push @positive_words, $_ while(<$in_positive>);
-chomp(@positive_words);
+while(<$in_positive>){
+    chomp;
+    my @line = split(" ", $_);
+    $positive_words{$line[0]} = $line[1];
+}
 close $in_positive;
 
-push @negative_words, $_ while(<$in_negative>);
-chomp(@negative_words);
+while(<$in_negative>){
+    chomp;
+    my @line = split(" ", $_);
+    $negative_words{$line[0]} = -$line[1];
+}
 close $in_negative;
 
 # Print these lists in DEBUG:
@@ -124,10 +130,10 @@ if ($debug_mode) {
     say $log "\t$_" foreach (@urls);
 
     say $log "\nPositive words:";
-    say $log "\t$_" foreach (@positive_words);
+    say $log "\t$_" foreach (keys %positive_words);
 
     say $log "\nNegative words:";
-    say $log "\t$_" foreach (@negative_words);
+    say $log "\t$_" foreach (keys %negative_words);
 }
 
 
@@ -232,16 +238,16 @@ sub search_document {
             # If keyword found in paragraph, search paragraph for pos/neg words
             if ($text =~ m/$term/) {
                 $found = 1;
-                foreach (@positive_words) {
+                foreach (keys %positive_words) {
                     if ($text =~ m/$_/){
                         say $log "$term: Found positive word ($_)";
-                        $weight++;
+                        $weight += $positive_words{$_};
                     }
                 }
-                foreach (@negative_words) {
+                foreach (keys %negative_words) {
                     if ($text =~ m/$_/){
                         say $log "$term: Found negative word ($_)";
-                        $weight--;
+                        $weight -= $negative_words{$_};
                     }
                 }
             }

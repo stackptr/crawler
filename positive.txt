@@ -1,40 +1,40 @@
-success
-growing
-interest
-betterment
-mastery
-progress
-prosper
-upgrade
-advance
-better
-recovery
-upbeat
-upswing
-rise
-enhancement
-promotion
-rally
-gain
-grow
-futherance
-development
-augmentation
-accession
-accural
-accumulation
-boost
-surge
-swell
-waxing
-burgeoning
-cumulation
-yield
-profit
-harvest
-income
-benefit
-acquire
-assemble
-addition
-demand
+success 1
+growing 1
+interest 1
+betterment 1
+mastery 1
+progress 1
+prosper 1
+upgrade 1
+advance 1
+better 1
+recovery 1
+upbeat 1
+upswing 1
+rise 1
+enhancement 1
+promotion 1
+rally 1
+gain 1
+grow 1
+futherance 1
+development 1
+augmentation 1
+accession 1
+accural 1
+accumulation 1
+boost 1
+surge 1
+swell 1
+waxing 1
+burgeoning 1
+cumulation 1
+yield 1
+profit 1
+harvest 1
+income 1
+benefit 1
+acquire 1
+assemble 1
+addition 1
+demand 1
