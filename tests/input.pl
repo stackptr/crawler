@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use utf8;
 use Data::Dumper;
-use Keyword;
+use Text::Balanced ("extract_delimited");
 
 open(my $input, "<", "test_input") or die $!;
 open(my $multi, "<", "test_multi") or die $!;
@@ -14,19 +14,30 @@ while(<$input>){
     my @line = split (" ", $_);
     $words{$line[0]} = $line[1];
 }
-print Dumper(\%words);
+#print Dumper(\%words);
 
 my %keywords;
 while(<$multi>){
+    next if /^#/; # Handle comments
     chomp;
-    my @line = split (" ", $_);
-    foreach(@line){
-        if ($_ =~ m/^\"/){
-        }
+
+    my ($extracted, $suffix, $prefix) = extract_delimited($_, q{"'});
+
+    print Dumper($extracted);
+    print Dumper($suffix);
+    print Dumper($prefix);
 
 
-    }
-    $keywords{$line[0]} = new Keyword(@line);
+    my @line = split (" ", $suffix);
+
+    my ($keyword, @aliases);
+    
+    my %keyword_data = (
+        aliases => \@aliases,
+        pages => [0, 0, 0],
+    );
+    $keywords{$keyword} = \%keyword_data;
 }
 
-say $keywords{$_}->getKeyword() foreach (keys %keywords);
+print Dumper (\%keywords);
+
