@@ -4,10 +4,12 @@
 # crawler.pl
 
 # Import modules
-use 5.010;
+use 5.10.0;
 use strict;
 use warnings;
 use utf8;
+BEGIN{push @INC, 'lib'; }
+use List::MoreUtils;
 #use Win32::Console::ANSI;
 use Term::ANSIColor;
 use Mojo::UserAgent;
@@ -256,28 +258,20 @@ sub search_document {
     say $log "Searching: $url";
     
     foreach my $keyword (keys %keywords){
-        # Construct regex strings to match ALL and ANY keyword
-        my $match_all = "^(?=.\*\\b$keyword\\b)";
-        my $match_any = $keyword;
-        foreach my $alias (@{$keywords{$keyword}{"aliases"}}){
-            $match_all .= "(?=.\*\\b$alias\\b)";
-            $match_any .= "|$alias";
+        # Create the list of terms to work with:
+        my @terms;
+        push @terms, $keyword;
+        push @terms, @{$keywords{$keyword}{"aliases"}};
 
-        }
-        $match_all .= ".+";
-
-        # First ensure that all keywords exist somewhere in the page:
-        next unless ($text =~ /$match_all/);
-
-        say "Matched!";
-
+        # Make sure all the terms exist at least once in the text
+        next unless List::MoreUtils::all { $text =~ /\Q$_\E/ } @terms;
 
         # Now iterate through each paragraph finding at least one term and then any pos/neg words
         my $found;
         my $weight = 0;
         foreach my $p (@paragraphs){
             # If keyword found in paragraph, search paragraph for pos/neg words
-            if ($p =~ m/$match_any/) {
+            if (List::MoreUtils::any {$p =~ /\Q$_\E/} @terms) {
                 $found = 1;
                 foreach (keys %positive_words) {
                     if ($p =~ m/$_/){
