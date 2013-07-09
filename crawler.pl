@@ -15,7 +15,8 @@ use Term::ANSIColor;
 use Mojo::UserAgent;
 use IO::Tee;
 use Data::Dumper;
-if($^O eq "MSWin32") { use Win32::Console::ANSI;}
+#use Win32::Console::ANSI;
+
 # Set text strings
 use constant USAGE_TEXT => "usage: crawler <input-file> <output-file> [-d|--debug] [-q|--quiet]";
 
