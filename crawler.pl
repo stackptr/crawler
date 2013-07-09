@@ -8,14 +8,14 @@ use 5.10.0;
 use strict;
 use warnings;
 use utf8;
+
 BEGIN{push @INC, 'lib'; }
 use List::MoreUtils;
-#use Win32::Console::ANSI;
 use Term::ANSIColor;
 use Mojo::UserAgent;
 use IO::Tee;
 use Data::Dumper;
-
+if($^O eq "MSWin32") { use Win32::Console::ANSI;}
 # Set text strings
 use constant USAGE_TEXT => "usage: crawler <input-file> <output-file> [-d|--debug] [-q|--quiet]";
 
