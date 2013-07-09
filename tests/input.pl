@@ -20,17 +20,12 @@ my %keywords;
 while(<$multi>){
     next if /^#/; # Handle comments
     chomp;
-
-    my ($extracted, $suffix, $prefix) = extract_delimited($_, q{"'});
-
-    print Dumper($extracted);
-    print Dumper($suffix);
-    print Dumper($prefix);
-
-
-    my @line = split (" ", $suffix);
-
-    my ($keyword, @aliases);
+    
+    my @fields = /([^\s"]+|(?:[^\s"]*"[^"]*"[^\s"]*)+)(?:\s|$)/g;
+    $_ =~ s/"//g foreach @fields;
+    
+    my $keyword = shift @fields;
+    my @aliases = \@fields;
     
     my %keyword_data = (
         aliases => \@aliases,

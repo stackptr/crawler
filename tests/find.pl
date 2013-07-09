@@ -14,6 +14,9 @@ say $tx->res->dom->at('html title')->text;
 
 my @text = $tx->res->dom->find('p')->pluck('text')->each;
 
+my $all = join("\n", @text);
+say $all;
+
 foreach (@text){
     if ($_ =~ m/debt/){ print "Found one!\n"; }
 }

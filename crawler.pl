@@ -8,9 +8,11 @@ use 5.010;
 use strict;
 use warnings;
 use utf8;
+#use Win32::Console::ANSI;
 use Term::ANSIColor;
 use Mojo::UserAgent;
 use IO::Tee;
+use Data::Dumper;
 
 # Set text strings
 use constant USAGE_TEXT => "usage: crawler <input-file> <output-file> [-d|--debug] [-q|--quiet]";
@@ -97,10 +99,26 @@ say $out_file "\n\n*** BEGIN OUTPUT AT $timestamp\n";
 my (%keywords, %positive_words, %negative_words, @urls);
 
 # Process and close input files
-my @keyword_list;
-push @keyword_list, $_ while (<$in_keywords>);
-chomp @keyword_list;
-@{$keywords{$_}} = (0, 0, 0) foreach (@keyword_list); # +page, -page total_pages
+
+# Process keywords file, allowing for quoted keywords and multiple terms to be matched
+while(<$in_keywords>){
+    next if /^#/; # Handle comments
+    chomp;
+
+    # Regex to break up double quoted words
+    my @fields = /([^\s"]+|(?:[^\s"]*"[^"]*"[^\s"]*)+)(?:\s|$)/g;
+    $_ =~ s/"//g foreach @fields;
+
+    # Construct keyword entry from line
+    my $keyword = shift @fields;
+    my %keyword_data = (
+        aliases => \@fields,
+        pages => [0, 0, 0],     # pos, neg, total pages
+    );
+
+    # Push keyword entry to list of keywords
+    $keywords{$keyword} = \%keyword_data;
+}
 close $in_keywords;
 
 push @urls, Mojo::URL->new($_) while (<$in_urls>);
@@ -117,14 +135,20 @@ close $in_positive;
 while(<$in_negative>){
     chomp;
     my @line = split(" ", $_);
-    $negative_words{$line[0]} = -$line[1];
+    $negative_words{$line[0]} = $line[1];
 }
 close $in_negative;
 
 # Print these lists in DEBUG:
 if ($debug_mode) {
     say $log "Keywords:";
-    say $log "\t$_" foreach (keys %keywords);
+    foreach my $keyword (keys %keywords){
+        print $log "\t$keyword";
+        foreach my $alias (@{$keywords{$keyword}{"aliases"}}){
+            print $log " $alias" 
+        }
+        print $log "\n";
+    }
 
     say $log "\nURLS:";
     say $log "\t$_" foreach (@urls);
@@ -135,7 +159,6 @@ if ($debug_mode) {
     say $log "\nNegative words:";
     say $log "\t$_" foreach (keys %negative_words);
 }
-
 
 # Begin constructing crawler
 my $conn_max = 4;   # Maximum connections
@@ -228,38 +251,58 @@ sub parse_html {
 sub search_document {
     my ($url, $tx) = @_;
     my @paragraphs = $tx->res->dom->find('p')->pluck('text')->each;
+    my $text = join("\n", @paragraphs);
 
     say $log "Searching: $url";
     
-    foreach my $term (keys %keywords){
+    foreach my $keyword (keys %keywords){
+        # Construct regex strings to match ALL and ANY keyword
+        my $match_all = "^(?=.\*\\b$keyword\\b)";
+        my $match_any = $keyword;
+        foreach my $alias (@{$keywords{$keyword}{"aliases"}}){
+            $match_all .= "(?=.\*\\b$alias\\b)";
+            $match_any .= "|$alias";
+
+        }
+        $match_all .= ".+";
+
+        # First ensure that all keywords exist somewhere in the page:
+        next unless ($text =~ /$match_all/);
+
+        say "Matched!";
+
+
+        # Now iterate through each paragraph finding at least one term and then any pos/neg words
         my $found;
         my $weight = 0;
-        foreach my $text (@paragraphs){
+        foreach my $p (@paragraphs){
             # If keyword found in paragraph, search paragraph for pos/neg words
-            if ($text =~ m/$term/) {
+            if ($p =~ m/$match_any/) {
                 $found = 1;
                 foreach (keys %positive_words) {
-                    if ($text =~ m/$_/){
-                        say $log "$term: Found positive word ($_)";
+                    if ($p =~ m/$_/){
+                        say $log "$keyword: Found positive word ($_)";
                         $weight += $positive_words{$_};
                     }
                 }
                 foreach (keys %negative_words) {
-                    if ($text =~ m/$_/){
-                        say $log "$term: Found negative word ($_)";
+                    if ($p =~ m/$_/){
+                        say $log "$keyword: Found negative word ($_)";
                         $weight -= $negative_words{$_};
                     }
                 }
             }
         }
 
-        # Update total page count if the keyword was found
-        ${$keywords{$term}}[2]++ if ($found);
+        next if (not $found); # Skip processing if nothing was found
+        
+        # Update total page count of the keyword
+        $keywords{$keyword}{"pages"}[2]++;
 
         # Only print message on non-neutral page
-        if ($found and $weight != 0){
+        if ($weight != 0){
             print color 'bold white';
-            print $out "$term";
+            print $out "$keyword";
             print color 'reset';
             print $out ": ";
             if ($weight > 0) {
@@ -267,13 +310,13 @@ sub search_document {
                 print $out "POSITIVE";
                 print color 'reset';
                 print $out " (+$weight) - ";
-                ${$keywords{$term}}[0]++;
+                $keywords{$keyword}{"pages"}[0]++;
             } elsif ($weight < 0) {
                 print color 'red';
                 print $out "NEGATIVE";
                 print color 'reset';
                 print $out " ($weight) - ";
-                ${$keywords{$term}}[0]++;
+                $keywords{$keyword}{"pages"}[1]++;
             }
             print color 'underline blue';
             print $out "$url\n";
@@ -297,14 +340,19 @@ sub exit_handler {
     # Write summary: ensure that it is always written to file and stdout
     my $summary = IO::Tee->new(\*STDOUT, $out_file);
 
+    my $max_length = 0;
+    foreach(keys %keywords){
+        $max_length = length $_ if ($max_length < length $_);
+    }
+
     print color 'yellow';
     say $summary "\n\n*** ENDED CRAWL AT $timestamp";
     print color 'reset';
     say $summary "Summary of crawl:\n";
-    printf $summary "%-10s%14s%14s%14s\n","Keyword","Positive","Negative","Total";
-    print "-" foreach (1..52);
+    printf $summary "%-${max_length}s%14s%14s%10s\n","Keyword","Positive","Negative","Total";
+    print "-" foreach (1..38+$max_length);
     print "\n";
-    printf $summary "%-10s%14d%14d%14d\n",$_,@{$keywords{$_}} foreach(keys %keywords);
+    printf $summary "%-${max_length}s%14d%14d%10d\n",$_,@{$keywords{$_}{"pages"}} foreach(keys %keywords);
     say $summary "Time taken: $time_total";
 
     exit;

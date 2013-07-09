@@ -1,2 +1,4 @@
-"Another Key" alias3 alias4
-Keyword alias1 alias2
+Standard alias_one alias_two
+"Long keyword" alias
+"No aliases!"
+Keyword "long alias" alias

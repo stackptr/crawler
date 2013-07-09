@@ -49,3 +49,12 @@ foreach my $keyword (keys %keywords){
     say "Total pages: $page_list[2]";
     say '';
 }
+
+#Build list of words from keyword + aliases
+foreach my $keyword (keys %keywords){
+    my @terms;
+    push @terms, $keyword;
+    push @terms, @{$keywords{$keyword}{"aliases"}};
+    print Dumper (\@terms);
+}
+
