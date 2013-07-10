@@ -18,13 +18,14 @@ use Data::Dumper;
 #use Win32::Console::ANSI;
 
 # Set text strings
-use constant USAGE_TEXT => "usage: crawler <input-file> <output-file> [-d|--debug] [-q|--quiet]";
+use constant USAGE_TEXT => "Usage: crawler <input-file> <output-file> [-h|--help] [-d|--debug] [-q|--quiet]";
 
 # Set signal handlers
 $SIG{'INT'} = \&exit_handler;
 $SIG{'QUIT'} = \&exit_handler;
 
 # Create argument variables, defaulting to false
+my $help_mode = 0;
 my $debug_mode = 0;
 my $quiet_mode = 0;
 my $keywords_filename = '';
@@ -39,11 +40,41 @@ for my $arg (@ARGV){
         # And process:
         $debug_mode = 1 if ($arg eq "d" or $arg eq "debug");
         $quiet_mode = 1 if ($arg eq "q" or $arg eq "quiet");
+        $help_mode = 1 if ($arg eq 'h' or $arg eq "help");
     } else {
         # Use non-flag args as variables for files in order:
         if ($keywords_filename eq '') { $keywords_filename = $arg; }
         elsif ($output_filename eq '') { $output_filename = $arg; }
     }
+}
+
+if ($help_mode){
+    say USAGE_TEXT;
+    say "Perform a web crawl to classify sentiment on a list of keywords";
+    say '';
+    say "Arguments:";
+    say "  -h, --help    Print this help message.";
+    say "  -d, --debug   Run in debug mode. Everything printed to the log is also output to screen.";
+    say "  -q, --quiet   Run in quiet mode. Supress all output except ending summary of crawl.";
+    say '';
+    say "Files (user defined):";
+    say "  <input-file>  List of keywords for the crawler to search for. Each line represents a";
+    say "                   grouping of keywords, with the first word representing the main keyword";
+    say "                   and the other words used as aliases for that keyword. A relevant page";
+    say "                   must contain ALL keywords. Keywords may be quoted to allow multiple";
+    say "                   words used as one keyword.";
+    say "  <output-file> File to accept statistical output of crawl. An existing file will have";
+    say "                   output appended, with existing text preserved.";
+    say '';
+    say "Files (constant):";
+    say "  websites.txt  List of URLs, one per line, representing the root website for the crawler";
+    say "                   to begin searching from. By default, no links are followed that are";
+    say "                   outside the domain specified.";
+    say "  positive.txt  A list of positive keywords and weights seperated by whitespace.";
+    say "  negative.txt  A list of negative keywords and weights separated by whitespace. Note that";
+    say "                   the crawler will automatically consider these negative weights, so no";
+    say "                   minus sign is necessary.";
+    exit;
 }
 
 if (!$output_filename){
