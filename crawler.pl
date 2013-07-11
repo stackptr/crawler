@@ -147,7 +147,6 @@ while(<$in_keywords>){
     my $keyword = shift @fields;
     my %keyword_data = (
         aliases => \@fields,
-        pages => [0, 0, 0],     # pos, neg, total pages
     );
 
     # Push keyword entry to list of keywords
@@ -322,9 +321,6 @@ sub search_document {
 
         next if (not $found); # Skip processing if nothing was found
         
-        # Update total page count of the keyword
-        $keywords{$keyword}{"pages"}[2]++;
-
         # Only print message on non-neutral page
         if ($weight != 0){
             print color 'bold white';
@@ -336,18 +332,22 @@ sub search_document {
                 print $out "POSITIVE";
                 print color 'reset';
                 print $out " (+$weight) - ";
-                $keywords{$keyword}{"pages"}[0]++;
             } elsif ($weight < 0) {
                 print color 'red';
                 print $out "NEGATIVE";
                 print color 'reset';
                 print $out " ($weight) - ";
-                $keywords{$keyword}{"pages"}[1]++;
             }
             print color 'underline blue';
             print $out "$url\n";
             print color 'reset';
 
+            # Add to pages hash
+            if (defined $keywords{$keyword}{"pages"}{$weight}){
+                $keywords{$keyword}{"pages"}{$weight}++;
+            } else {
+                $keywords{$keyword}{"pages"}{$weight} = 1;
+            }
         }
     }
 }
@@ -363,22 +363,28 @@ sub exit_handler {
     my $time_total = $time_end - $time_start;
     $time_total = format_seconds($time_total);
 
+    # Prepare keywords for printing
+    #for $key ( sort {$a<=>$b} keys %keywords{$keyword}{"pages"} )
+
     # Write summary: ensure that it is always written to file and stdout
     my $summary = IO::Tee->new(\*STDOUT, $out_file);
-
-    my $max_length = 0;
-    foreach(keys %keywords){
-        $max_length = length $_ if ($max_length < length $_);
-    }
 
     print color 'yellow';
     say $summary "\n\n*** ENDED CRAWL AT $timestamp";
     print color 'reset';
     say $summary "Summary of crawl:\n";
-    printf $summary "%-${max_length}s%14s%14s%10s\n","Keyword","Positive","Negative","Total";
-    print "-" foreach (1..38+$max_length);
-    print "\n";
-    printf $summary "%-${max_length}s%14d%14d%10d\n",$_,@{$keywords{$_}{"pages"}} foreach(keys %keywords);
+
+    foreach my $keyword (keys %keywords){
+        say $summary "$keyword";
+
+        foreach my $weight (keys %{$keywords{$keyword}{"pages"}}){
+            my $count = $keywords{$keyword}{"pages"}{$weight};
+            print $summary "  ";
+            print $summary "+" if $weight > 0;
+            print $summary "$weight -- $count pages\n";
+        }
+    }
+
     say $summary "Time taken: $time_total";
 
     exit;

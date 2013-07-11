@@ -14,6 +14,7 @@ my $ua = Mojo::UserAgent->new(max_redirects => 5)->detect_proxy;
 
 my $tx = $ua->get($url);
 say $tx->res->dom->at('html title')->text;
+print Dumper($tx->req);
 
 my @text = $tx->res->dom->find('p')->pluck('text')->each;
 
@@ -23,7 +24,7 @@ my @words = qw(liquid bonds Pimco);
 
 print "Success!" if List::MoreUtils::all { $all =~ /$_/ } @words;
 
-my @words = qw(liquid bonds Pimco asdf);
+@words = qw(liquid bonds Pimco asdf);
 
 print "Never prints this!" if List::MoreUtils::all { $all =~ /$_/ } @words;
 
