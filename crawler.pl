@@ -380,8 +380,17 @@ sub exit_handler {
         foreach my $weight (keys %{$keywords{$keyword}{"pages"}}){
             my $count = $keywords{$keyword}{"pages"}{$weight};
             print $summary "  ";
-            print $summary "+" if $weight > 0;
-            print $summary "$weight -- $count pages\n";
+            if ($weight > 0) {
+                print color 'green';
+                print $summary "+$weight";
+            } else {
+                print color 'red';
+                print $summary "-$weight";
+            }
+            print color 'reset';
+            print $summary " -- $count page";
+            print $summary "s" if ($count > 1);
+            print $summary "\n";
         }
     }
 
