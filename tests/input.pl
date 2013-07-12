@@ -45,10 +45,9 @@ while(<$multi>){
     }
 
     # Process dates
-    my ($begin, $end);
     @dates = sort @dates;
-    $begin = $dates[0];
-    $end = $dates[1];
+    my $begin = $dates[0];
+    my $end = $dates[1];
     
     my %keyword_data = (
         aliases => \@aliases,

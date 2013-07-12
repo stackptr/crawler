@@ -15,10 +15,11 @@ use Term::ANSIColor;
 use Mojo::UserAgent;
 use IO::Tee;
 use Data::Dumper;
+use DateTime::Format::Flexible;
 #use Win32::Console::ANSI;
 
 # Set text strings
-use constant USAGE_TEXT => "Usage: crawler <input-file> <output-file> [-h|--help] [-d|--debug] [-q|--quiet]";
+use constant USAGE_TEXT => "Usage: crawler <input-file> <output-file> [-h|--help] [-d|--debug] [-q|--quiet] [-i|--ignore]";
 
 # Set signal handlers
 $SIG{'INT'} = \&exit_handler;
@@ -28,6 +29,7 @@ $SIG{'QUIT'} = \&exit_handler;
 my $help_mode = 0;
 my $debug_mode = 0;
 my $quiet_mode = 0;
+my $discard_mode = 1; # On by default
 my $keywords_filename = '';
 my $output_filename = '';
 
@@ -40,6 +42,7 @@ for my $arg (@ARGV){
         # And process:
         $debug_mode = 1 if ($arg eq "d" or $arg eq "debug");
         $quiet_mode = 1 if ($arg eq "q" or $arg eq "quiet");
+        $discard_mode = 0 if ($arg eq "i" or $arg eq "ignore");
         $help_mode = 1 if ($arg eq 'h' or $arg eq "help");
     } else {
         # Use non-flag args as variables for files in order:
@@ -56,6 +59,8 @@ if ($help_mode){
     say "  -h, --help    Print this help message.";
     say "  -d, --debug   Run in debug mode. Everything printed to the log is also output to screen.";
     say "  -q, --quiet   Run in quiet mode. Supress all output except ending summary of crawl.";
+    say "  -i, --ignore  In the event a date is missing from a page, assume it meets range criteria";
+    say "                   and proceed to analyze.";
     say '';
     say "Files (user defined):";
     say "  <input-file>  List of keywords for the crawler to search for. Each line represents a";
@@ -145,8 +150,32 @@ while(<$in_keywords>){
 
     # Construct keyword entry from line
     my $keyword = shift @fields;
+
+    my (@aliases, @dates);
+
+    # Parse date and alias strings
+    foreach (@fields){
+        my $date_regex = "^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$";
+        if (/$date_regex/){
+            if ($#dates < 1 ) {
+                push @dates, parse_date($_);
+            } else {
+                next;
+            }
+        } else {
+            push @aliases, $_;
+        }
+    }
+
+    # Process dates
+    @dates = sort @dates;
+    my $begin = $dates[0];
+    my $end = $dates[1];
+
     my %keyword_data = (
-        aliases => \@fields,
+        aliases => \@aliases,
+        begin => $begin,
+        end => $end
     );
 
     # Push keyword entry to list of keywords
@@ -297,6 +326,42 @@ sub search_document {
         # Make sure all the terms exist at least once in the text
         next unless List::MoreUtils::all { $text =~ /\Q$_\E/ } @terms;
 
+        # If there is a begin date specified, then attempt to parse date from DOM
+        if (defined $keywords{$keyword}{"begin"}){
+            my $page_date = find_date($tx->res->dom);
+
+            if(not defined $page_date){
+                if($discard_mode){
+                    # If date couldn't be found and we're discarding pages, log and return
+                    say $log "No date found. Discarding.";
+                    return;
+                } else {
+                    # Otherwise just log it
+                    say $log "No date found. Continuing.";
+                }
+            } else {
+                # Date was obtained, so compare to keyword's begin/end dates to see if meets criteria
+                $page_date = parse_date($page_date);
+                if ($page_date > $keywords{$keyword}{"begin"}){
+                    if(defined $keywords{$keyword}{"end"}){
+                        if ($page_date < $keywords{$keyword}{"end"}){
+                            # Do nothing, all qualifications are met: begin < page < end
+                        } else {
+                            say $log "Page is newer than end date. Discarding.";
+                            return;
+                        }
+                    } else {
+                        # Do nothing, all qualifications are met: begin < page (no end specified)
+                    }
+
+                } else {
+                    say $log "Page is older start date. Discarding.";
+                    return;
+                }
+            }
+
+        }
+
         # Now iterate through each paragraph finding at least one term and then any pos/neg words
         my $found;
         my $weight = 0;
@@ -351,6 +416,38 @@ sub search_document {
         }
     }
 }
+
+# Routine to parse the DOM to find a publication date
+sub find_date {
+    my $dom = shift;
+
+    # List of meta name and property attributes
+    my @meta_names = ( "dateModified", "lastmod", "datePublished", "pub_date",
+    "pubdate", "dateCreated", "date", "REVISION_DATE");
+    my @meta_props = ("article:published_time");
+    my @meta_itemprop = ("dateModified", "datePublished");
+
+    # Begin with reading meta tags
+    for (@meta_names){
+        my $ret = $dom->at("meta[name=\"$_\"]");
+        next if not defined $ret;
+        return $ret->attrs('content');
+    }
+    for (@meta_props){
+        my $ret = $dom->at("meta[property=\"$_\"]");
+        next if not defined $ret;
+        return $ret->attrs('content');
+    }
+    for (@meta_itemprop){
+        my $ret = $dom->at("meta[itemprop=\"$_\"]");
+        next if not defined $ret;
+        return $ret->attrs('value');
+    }
+
+    return;
+}
+
+
 
 # Called before exiting to clean things up
 sub exit_handler {
@@ -417,3 +514,10 @@ sub format_seconds {
     }
 }
 
+sub parse_date {
+    my $str = shift;
+    $str =~ s/UTC.*//;
+    $str =~ s/T.*//;
+    my $ret = DateTime::Format::Flexible->parse_datetime($str);
+    return $ret->epoch();
+}
