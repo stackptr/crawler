@@ -23,11 +23,24 @@ my @url = ("http://www.businessweek.com/articles/2013-06-28/nothings-quiet-on-th
     "http://online.wsj.com/article/SB10001424127887323740804578601573895219316.html?mod=WSJ_hpp_LEFTTopStories"
 );
 
+# Date range
+my $date_begin = "2013-05-01";
+my $date_end = "2013-07-01";
+
+$date_begin = parse($date_begin);
+$date_end = parse($date_end);
+
+say $date_begin;
+say $date_end;
+
 my ($tx, $date, @parsed);
 foreach (@url){
     $tx = get_url($_);
     $date = find_date($tx->res->dom);
-    parse($date);
+    $date = parse($date);
+    if ($date > $date_begin and $date < $date_end){
+        say "=> Within date bound";
+    }
     say '';
 }
 
@@ -72,9 +85,11 @@ sub find_date {
 
 sub parse {
     my $str = shift;
-    say $str;
+    
+    # Trim timezones and times
+    $str =~ s/UTC.*//;
+    $str =~ s/T.*//;
 
     my $ret = DateTime::Format::Flexible->parse_datetime($str);
-
-    say "=> $ret";
+    return $ret->epoch();
 }
