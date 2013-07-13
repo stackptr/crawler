@@ -16,7 +16,7 @@ use Mojo::UserAgent;
 use IO::Tee;
 use Data::Dumper;
 use DateTime::Format::Flexible;
-#use Win32::Console::ANSI;
+use Win32::Console::ANSI;
 
 # Set text strings
 use constant USAGE_TEXT => "Usage: crawler <input-file> <output-file> [-h|--help] [-d|--debug] [-q|--quiet] [-i|--ignore]";
