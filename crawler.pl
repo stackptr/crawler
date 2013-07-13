@@ -175,7 +175,8 @@ while(<$in_keywords>){
     my %keyword_data = (
         aliases => \@aliases,
         begin => $begin,
-        end => $end
+        end => $end,
+        skipped => 0
     );
 
     # Push keyword entry to list of keywords
@@ -202,25 +203,23 @@ while(<$in_negative>){
 close $in_negative;
 
 # Print these lists in DEBUG:
-if ($debug_mode) {
-    say $log "Keywords:";
-    foreach my $keyword (keys %keywords){
-        print $log "\t$keyword";
-        foreach my $alias (@{$keywords{$keyword}{"aliases"}}){
-            print $log " $alias" 
-        }
-        print $log "\n";
+say $log "Keywords:";
+foreach my $keyword (keys %keywords){
+    print $log "\t$keyword";
+    foreach my $alias (@{$keywords{$keyword}{"aliases"}}){
+        print $log " $alias" 
     }
-
-    say $log "\nURLS:";
-    say $log "\t$_" foreach (@urls);
-
-    say $log "\nPositive words:";
-    say $log "\t$_" foreach (keys %positive_words);
-
-    say $log "\nNegative words:";
-    say $log "\t$_" foreach (keys %negative_words);
+    print $log "\n";
 }
+
+say $log "\nURLS:";
+say $log "\t$_" foreach (@urls);
+
+say $log "\nPositive words:";
+say $log "\t$_" foreach (keys %positive_words);
+
+say $log "\nNegative words:";
+say $log "\t$_" foreach (keys %negative_words);
 
 # Begin constructing crawler
 my $conn_max = 4;   # Maximum connections
@@ -334,6 +333,7 @@ sub search_document {
                 if($discard_mode){
                     # If date couldn't be found and we're discarding pages, log and return
                     say $log "No date found. Discarding.";
+                    $keywords{$keyword}{"skipped"}++;
                     return;
                 } else {
                     # Otherwise just log it
@@ -348,6 +348,7 @@ sub search_document {
                             # Do nothing, all qualifications are met: begin < page < end
                         } else {
                             say $log "Page is newer than end date. Discarding.";
+                            $keywords{$keyword}{"skipped"}++;
                             return;
                         }
                     } else {
@@ -356,6 +357,7 @@ sub search_document {
 
                 } else {
                     say $log "Page is older start date. Discarding.";
+                    $keywords{$keyword}{"skipped"}++;
                     return;
                 }
             }
@@ -393,17 +395,17 @@ sub search_document {
             print color 'reset';
             print $out ": ";
             if ($weight > 0) {
-                print color 'green';
+                print color 'bold green';
                 print $out "POSITIVE";
                 print color 'reset';
                 print $out " (+$weight) - ";
             } elsif ($weight < 0) {
-                print color 'red';
+                print color 'bold red';
                 print $out "NEGATIVE";
                 print color 'reset';
                 print $out " ($weight) - ";
             }
-            print color 'underline blue';
+            print color 'bold blue';
             print $out "$url\n";
             print color 'reset';
 
@@ -452,7 +454,7 @@ sub find_date {
 # Called before exiting to clean things up
 sub exit_handler {
     my ($sig) = @_;
-    say "\nExiting on SIG$sig -- Stopping event loop";
+    say $log "\nExiting on SIG$sig -- Stopping event loop";
     Mojo::IOLoop->stop;
 
     $timestamp = localtime;
@@ -482,16 +484,20 @@ sub exit_handler {
                 print $summary "+$weight";
             } else {
                 print color 'red';
-                print $summary "-$weight";
+                print $summary "$weight";
             }
             print color 'reset';
             print $summary " -- $count page";
             print $summary "s" if ($count > 1);
             print $summary "\n";
         }
+
+        my $skipped = $keywords{$keyword}{"skipped"};
+
+        say $summary "  Skipped: $skipped" if ($skipped > 0);
     }
 
-    say $summary "Time taken: $time_total";
+    say $summary "\nTime taken: $time_total";
 
     exit;
 }
