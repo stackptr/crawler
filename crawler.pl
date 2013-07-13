@@ -57,28 +57,31 @@ if ($help_mode){
     say '';
     say "Arguments:";
     say "  -h, --help    Print this help message.";
-    say "  -d, --debug   Run in debug mode. Everything printed to the log is also output to screen.";
-    say "  -q, --quiet   Run in quiet mode. Supress all output except ending summary of crawl.";
-    say "  -i, --ignore  In the event a date is missing from a page, assume it meets range criteria";
-    say "                   and proceed to analyze.";
+    say "  -d, --debug   Run in debug mode. Everything printed to the log is also output";
+    say "                   to screen.";
+    say "  -q, --quiet   Run in quiet mode. Supress all output except ending summary of";
+    say "                   crawl.";
+    say "  -i, --ignore  In the event a date is missing from a page, assume it meets";
+    say "                   range criteria and proceed to analyze.";
     say '';
     say "Files (user defined):";
-    say "  <input-file>  List of keywords for the crawler to search for. Each line represents a";
-    say "                   grouping of keywords, with the first word representing the main keyword";
-    say "                   and the other words used as aliases for that keyword. A relevant page";
-    say "                   must contain ALL keywords. Keywords may be quoted to allow multiple";
+    say "  <input-file>  List of keywords for the crawler to search for. Each line";
+    say "                   represents a grouping of keywords, with the first word";
+    say "                   representing the main keyword and the other words used";
+    say "                   as aliases for that keyword. A relevant page must contain";
+    say "                   ALL keywords. Keywords may be quoted to allow multiple";
     say "                   words used as one keyword.";
-    say "  <output-file> File to accept statistical output of crawl. An existing file will have";
-    say "                   output appended, with existing text preserved.";
+    say "  <output-file> File to accept statistical output of crawl. An existing file";
+    say "                   will have output appended, with existing text preserved.";
     say '';
     say "Files (constant):";
-    say "  websites.txt  List of URLs, one per line, representing the root website for the crawler";
-    say "                   to begin searching from. By default, no links are followed that are";
-    say "                   outside the domain specified.";
-    say "  positive.txt  A list of positive keywords and weights seperated by whitespace.";
-    say "  negative.txt  A list of negative keywords and weights separated by whitespace. Note that";
-    say "                   the crawler will automatically consider these negative weights, so no";
-    say "                   minus sign is necessary.";
+    say "  websites.txt  List of URLs, one per line, representing the root website for";
+    say "                   the crawler to begin searching from. By default, no links";
+    say "                   are followed that are outside the domain specified.";
+    say "  positive.txt  A list of positive keywords and weights seperated by whitespace";
+    say "  negative.txt  A list of negative keywords and weights separated by whitespace";
+    say "                   Note that the crawler will automatically consider these";
+    say "                   negative weights, so no minus sign is necessary.";
     exit;
 }
 
@@ -461,9 +464,6 @@ sub exit_handler {
     my $time_end = time;
     my $time_total = $time_end - $time_start;
     $time_total = format_seconds($time_total);
-
-    # Prepare keywords for printing
-    #for $key ( sort {$a<=>$b} keys %keywords{$keyword}{"pages"} )
 
     # Write summary: ensure that it is always written to file and stdout
     my $summary = IO::Tee->new(\*STDOUT, $out_file);
