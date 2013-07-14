@@ -16,6 +16,7 @@ use Mojo::UserAgent;
 use IO::Tee;
 use Data::Dumper;
 use DateTime::Format::Flexible;
+use POSIX qw( strftime );
 use Win32::Console::ANSI;
 
 # Set text strings
@@ -328,9 +329,10 @@ sub search_document {
         # Make sure all the terms exist at least once in the text
         next unless List::MoreUtils::all { $text =~ /\Q$_\E/ } @terms;
 
+        my $page_date;
         # If there is a begin date specified, then attempt to parse date from DOM
         if (defined $keywords{$keyword}{"begin"}){
-            my $page_date = find_date($tx->res->dom);
+            $page_date = find_date($tx->res->dom);
 
             if(not defined $page_date){
                 if($discard_mode){
@@ -364,7 +366,6 @@ sub search_document {
                     return;
                 }
             }
-
         }
 
         # Now iterate through each paragraph finding at least one term and then any pos/neg words
@@ -395,6 +396,9 @@ sub search_document {
         if ($weight != 0){
             print color 'bold white';
             print $out "$keyword";
+            foreach (@{$keywords{$keyword}{"aliases"}}){
+                print $out " $_";
+            }
             print color 'reset';
             print $out ": ";
             if ($weight > 0) {
@@ -407,6 +411,10 @@ sub search_document {
                 print $out "NEGATIVE";
                 print color 'reset';
                 print $out " ($weight) - ";
+            }
+            if (defined $page_date) {
+                my $dt = strftime("%Y-%m-%d", localtime($page_date));
+                print $out "$dt - ";
             }
             print color 'bold blue';
             print $out "$url\n";
@@ -474,7 +482,11 @@ sub exit_handler {
     say $summary "Summary of crawl:\n";
 
     foreach my $keyword (keys %keywords){
-        say $summary "$keyword";
+        print $summary "$keyword";
+        foreach (@{$keywords{$keyword}{"aliases"}}){
+            print $summary " $_";
+        }
+        say $summary '';
 
         foreach my $weight (keys %{$keywords{$keyword}{"pages"}}){
             my $count = $keywords{$keyword}{"pages"}{$weight};
